@@ -24,7 +24,8 @@ pipeline {
             steps {
                 echo 'Installing Python dependencies...'
                 sh '''
-                    pip install requests kafka-python pyspark pandas --quiet
+                    python --version
+                    pip install requests kafka-python pyspark pandas --quiet --break-system-packages
                 '''
             }
         }
