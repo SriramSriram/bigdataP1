@@ -26,6 +26,11 @@ pipeline {
                 sh '''
                     python --version
                     pip install requests kafka-python pyspark pandas --quiet --break-system-packages
+            
+                    # Create required folders that are in .gitignore
+                    mkdir -p logs
+                    mkdir -p data/raw
+                    mkdir -p data/processed
                 '''
             }
         }
