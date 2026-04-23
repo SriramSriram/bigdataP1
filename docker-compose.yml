@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+
+  # ─────────────────────────────────────────
+  # ZOOKEEPER — Kafka needs this to run
+  # ─────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - bigdata-net
+
+  # ─────────────────────────────────────────
+  # KAFKA BROKER
+  # ─────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - bigdata-net
+
+  # ─────────────────────────────────────────
+  # PYSPARK (Jupyter + Spark inside)
+  # ─────────────────────────────────────────
+  pyspark:
+    image: jupyter/pyspark-notebook:latest
+    container_name: pyspark
+    ports:
+      - "8888:8888"       # Jupyter notebook UI
+      - "4040:4040"       # Spark UI
+    volumes:
+      - ./data:/home/jovyan/data
+      - ./cleaning:/home/jovyan/cleaning
+      - ./spark_streaming:/home/jovyan/spark_streaming
+      - ./kafka_producer:/home/jovyan/kafka_producer
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - GRANT_SUDO=yes
+    networks:
+      - bigdata-net
+
+  # ─────────────────────────────────────────
+  # N8N — Orchestrator + AI Agent
+  # ─────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"       # n8n UI → open localhost:5678
+    volumes:
+      - ./n8n_workflows:/home/node/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+    depends_on:
+      - kafka
+    networks:
+      - bigdata-net
+
+  # ─────────────────────────────────────────
+  # KAFKA UI — visual browser for Kafka topics
+  # ─────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8085:8080"       # open localhost:8080 to see topics
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      - kafka
+    networks:
+      - bigdata-net
+
+# ─────────────────────────────────────────
+# SHARED NETWORK — all containers talk here
+# ─────────────────────────────────────────
+networks:
+  bigdata-net:
+    driver: bridge

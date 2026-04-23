@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Energy Pipeline Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background:#0f1117; color:#e0e0e0; }
+  header { background:linear-gradient(135deg,#1a1f2e,#2d3561);
+            padding:24px 32px; border-bottom:1px solid #2a2f45; }
+  header h1 { font-size:24px; color:#7c83fd; }
+  header p  { font-size:13px; color:#888; margin-top:4px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr);
+              gap:16px; padding:24px 32px 0; }
+  .card { background:#1a1f2e; border:1px solid #2a2f45;
+           border-radius:12px; padding:20px; }
+  .card .label { font-size:12px; color:#888; text-transform:uppercase;
+                  letter-spacing:1px; }
+  .card .value { font-size:32px; font-weight:700; margin-top:8px; }
+  .card .sub   { font-size:12px; color:#666; margin-top:4px; }
+  .blue  { color:#7c83fd; }
+  .red   { color:#e74c3c; }
+  .orange{ color:#e67e22; }
+  .green { color:#2ecc71; }
+  .charts { display:grid; grid-template-columns:2fr 1fr;
+             gap:16px; padding:24px 32px 0; }
+  .chart-card { background:#1a1f2e; border:1px solid #2a2f45;
+                 border-radius:12px; padding:20px; }
+  .chart-card h3 { font-size:14px; color:#aaa; margin-bottom:16px; }
+  .table-section { padding:24px 32px; }
+  .table-section h3 { font-size:16px; color:#aaa; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse;
+           background:#1a1f2e; border-radius:12px; overflow:hidden;
+           border:1px solid #2a2f45; }
+  th { background:#2a2f45; padding:12px 16px; text-align:left;
+        font-size:12px; color:#888; text-transform:uppercase; }
+  td { padding:12px 16px; font-size:13px; border-bottom:1px solid #2a2f45; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover { background:#222840; }
+  footer { text-align:center; padding:24px; color:#444; font-size:12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Energy Consumption Pipeline — Live Dashboard</h1>
+  <p>UCI Household Power Consumption | Kafka + PySpark + n8n Pipeline</p>
+</header>
+
+<!-- SUMMARY CARDS -->
+<div class="grid-4">
+  <div class="card">
+    <div class="label">Total Anomalies</div>
+    <div class="value red">295</div>
+    <div class="sub">Detected in stream</div>
+  </div>
+  <div class="card">
+    <div class="label">High Voltage Events</div>
+    <div class="value orange">69</div>
+    <div class="sub">Voltage &gt; 250V</div>
+  </div>
+  <div class="card">
+    <div class="label">High Power Events</div>
+    <div class="value red">226</div>
+    <div class="sub">Power &gt; 6kW</div>
+  </div>
+  <div class="card">
+    <div class="label">Avg Active Power</div>
+    <div class="value blue">1.826 kW</div>
+    <div class="sub">Peak: 4.216 kW</div>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>Rolling Average — Active Power & Voltage Over Time</h3>
+    <canvas id="rollingChart" height="100"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Anomaly Breakdown</h3>
+    <canvas id="anomalyPie" height="100"></canvas>
+  </div>
+</div>
+
+<!-- ANOMALY TABLE -->
+<div class="table-section">
+  <h3>Recent Anomaly Events (Last 20)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Type</th>
+        <th>Voltage (V)</th>
+        <th>Active Power (kW)</th>
+        <th>Detected At</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        <tr>
+            <td>2006-12-30 20:31:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>232.04</td>
+            <td>6.164</td>
+            <td>2026-04-24T00:33:18.374824</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 20:29:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>230.96</td>
+            <td>6.428</td>
+            <td>2026-04-24T00:33:18.352897</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 19:29:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>230.36</td>
+            <td>6.076</td>
+            <td>2026-04-24T00:33:17.691383</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 19:26:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>230.04</td>
+            <td>6.476</td>
+            <td>2026-04-24T00:33:17.656587</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:57:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>237.3</td>
+            <td>6.198</td>
+            <td>2026-04-24T00:33:12.969498</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:56:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.89</td>
+            <td>6.114</td>
+            <td>2026-04-24T00:33:12.949444</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:55:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.26</td>
+            <td>6.116</td>
+            <td>2026-04-24T00:33:12.932295</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:54:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>234.71</td>
+            <td>6.082</td>
+            <td>2026-04-24T00:33:12.915173</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:53:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>234.52</td>
+            <td>6.086</td>
+            <td>2026-04-24T00:33:12.900749</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:52:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>234.74</td>
+            <td>6.086</td>
+            <td>2026-04-24T00:33:12.884832</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:51:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.15</td>
+            <td>6.12</td>
+            <td>2026-04-24T00:33:12.869059</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:50:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.54</td>
+            <td>6.13</td>
+            <td>2026-04-24T00:33:12.856121</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:49:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.77</td>
+            <td>6.192</td>
+            <td>2026-04-24T00:33:12.843759</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:48:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.24</td>
+            <td>6.206</td>
+            <td>2026-04-24T00:33:12.829617</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:47:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.62</td>
+            <td>6.284</td>
+            <td>2026-04-24T00:33:12.817587</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:46:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.38</td>
+            <td>6.136</td>
+            <td>2026-04-24T00:33:12.805537</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 12:45:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>235.11</td>
+            <td>6.126</td>
+            <td>2026-04-24T00:33:12.792560</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 11:17:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>231.11</td>
+            <td>6.176</td>
+            <td>2026-04-24T00:33:11.814362</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 11:15:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>230.34</td>
+            <td>6.32</td>
+            <td>2026-04-24T00:33:11.788676</td>
+        </tr>
+        <tr>
+            <td>2006-12-30 11:14:00</td>
+            <td><span style="background:#e67e22;color:white;padding:3px 8px;
+                border-radius:4px;font-size:12px">high_power</span></td>
+            <td>229.11</td>
+            <td>6.656</td>
+            <td>2026-04-24T00:33:11.777819</td>
+        </tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  BigDataP1 Pipeline &nbsp;|&nbsp; Stage 5 Dashboard &nbsp;|&nbsp;
+  Built with Kafka · PySpark · n8n · Docker
+</footer>
+
+<script>
+// Rolling Average Line Chart
+new Chart(document.getElementById('rollingChart'), {
+  type: 'line',
+  data: {
+    labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59],
+    datasets: [
+      {
+        label: 'Avg Power (kW)',
+        data: [2.351, 0.525, 1.666, 0.771, 1.411, 1.365, 0.392, 1.363, 1.616, 1.773, 2.652, 0.6, 1.51, 0.962, 2.075, 0.277, 0.521, 1.839, 1.14, 3.382, 1.983, 2.594, 3.168, 4.216, 4.1, 3.029, 1.709, 2.364, 1.604, 0.511, 0.746, 1.258, 2.432, 2.243, 3.094, 2.529, 3.096, 2.964, 3.187, 0.875, 0.694, 2.004, 0.345, 1.642, 0.519, 0.679, 0.744, 1.769, 3.206, 1.992, 3.061, 1.91, 1.025, 2.781, 0.297, 1.824, 2.756, 3.385, 1.217],
+        borderColor: '#7c83fd',
+        backgroundColor: 'rgba(124,131,253,0.1)',
+        tension: 0.4, fill: true, pointRadius: 3
+      },
+      {
+        label: 'Avg Voltage (V)',
+        data: [237.362, 243.566, 240.431, 242.497, 240.976, 242.964, 245.579, 242.71, 242.442, 240.799, 240.137, 244.143, 240.451, 242.521, 235.325, 244.116, 245.206, 239.57, 241.066, 236.803, 242.942, 241.264, 239.287, 239.036, 238.56, 242.117, 244.099, 237.668, 241.957, 242.619, 247.272, 244.463, 242.866, 241.268, 241.14, 244.339, 238.78, 241.736, 239.609, 246.431, 247.347, 239.827, 244.37, 240.773, 246.029, 246.325, 242.351, 241.879, 240.01, 246.576, 242.174, 240.962, 238.481, 237.038, 245.18, 242.948, 239.053, 235.458, 240.426],
+        borderColor: '#2ecc71',
+        backgroundColor: 'rgba(46,204,113,0.05)',
+        tension: 0.4, fill: false, pointRadius: 3,
+        yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color:'#aaa' } } },
+    scales: {
+      x:  { ticks: { color:'#666' }, grid: { color:'#2a2f45' } },
+      y:  { ticks: { color:'#666' }, grid: { color:'#2a2f45' },
+             title: { display:true, text:'Power (kW)', color:'#666' } },
+      y2: { position:'right', ticks: { color:'#666' },
+             grid: { drawOnChartArea:false },
+             title: { display:true, text:'Voltage (V)', color:'#666' } }
+    }
+  }
+});
+
+// Anomaly Pie Chart
+new Chart(document.getElementById('anomalyPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['high_power', 'high_voltage'],
+    datasets: [{
+      data: [226, 69],
+      backgroundColor: ['#e74c3c','#e67e22','#3498db','#9b59b6'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position:'bottom', labels: { color:'#aaa', padding:16 } }
+    }
+  }
+});
+</script>
+</body>
+</html>

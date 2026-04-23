@@ -1,0 +1,23 @@
+# Data files - too large for GitHub
+data/raw/
+data/processed/
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# n8n internal
+n8n_workflows/.n8n/
+
+# ivy cache
+.ivy*
+
+# Environment
+.env
+*.egg-info/
