@@ -9,8 +9,23 @@ ROLLING_AVG_PATH = "../data/processed/stream_output/rolling_avg/rolling_avg.csv"
 OUTPUT_HTML      = "../dashboard/energy_dashboard.html"
 
 def load_data():
-    anomalies  = pd.read_csv(ANOMALIES_PATH)
-    rolling    = pd.read_csv(ROLLING_AVG_PATH)
+    # Load anomalies if exists, else create empty
+    if os.path.exists(ANOMALIES_PATH):
+        anomalies = pd.read_csv(ANOMALIES_PATH)
+    else:
+        anomalies = pd.DataFrame(columns=[
+            "Timestamp", "anomaly_flag", "Voltage",
+            "Global_active_power", "detected_at"
+        ])
+
+    # Load rolling avg if exists, else create empty
+    if os.path.exists(ROLLING_AVG_PATH):
+        rolling = pd.read_csv(ROLLING_AVG_PATH)
+    else:
+        rolling = pd.DataFrame(columns=[
+            "window_end", "avg_power", "avg_voltage", "avg_intensity"
+        ])
+
     return anomalies, rolling
 
 def build_dashboard(anomalies, rolling):
