@@ -53,10 +53,10 @@ pipeline {
         // ─────────────────────────────────────────
         stage('Stage 2 - Clean Data') {
             steps {
-                echo 'Running PySpark cleaning job...'
+                echo 'Running lightweight cleaning job...'
                 sh '''
                     cd cleaning
-                    python clean.py
+                    python clean_jenkins.py
                 '''
             }
         }
